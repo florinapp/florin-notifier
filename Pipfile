@@ -9,9 +9,9 @@ name = "pypi"
 
 tangerine = "*"
 rogersbank = "*"
-schedule = "*"
 python-gnupg = "*"
 redis = "*"
+celery = "*"
 
 
 [dev-packages]
