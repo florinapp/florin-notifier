@@ -8,16 +8,6 @@ import gnupg
 from redis import Redis
 
 
-def job():
-    print('hello')
-
-
-# def main():
-#     while True:
-#         schedule.run_pending()
-#         time.sleep(1)
-
-
 def create_provider(filename):
     gpg = gnupg.GPG(gnupghome=os.path.expanduser('~/.gnupg'))
     with open(filename) as f:
@@ -27,8 +17,7 @@ def create_provider(filename):
 
 
 def new_transactions(previous, current):
-    print('current: {}'.format(current))
-    print('previoius: {}'.format(previous))
+    return [txn for txn in current if txn not in previous]
 
 
 if __name__ == '__main__':
