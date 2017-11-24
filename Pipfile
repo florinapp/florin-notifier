@@ -12,7 +12,6 @@ rogersbank = "*"
 schedule = "*"
 python-gnupg = "*"
 redis = "*"
-certifi = "==2017.11.5"
 
 
 [dev-packages]
