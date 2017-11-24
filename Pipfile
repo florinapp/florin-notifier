@@ -11,7 +11,8 @@ tangerine = "*"
 rogersbank = "*"
 python-gnupg = "*"
 redis = "*"
-celery = "*"
+celery = {extras = ["redis"]}
+sendgrid = "*"
 
 
 [dev-packages]
