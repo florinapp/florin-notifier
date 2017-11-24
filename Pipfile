@@ -1,0 +1,19 @@
+[[source]]
+
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+
+[packages]
+
+tangerine = "*"
+rogersbank = "*"
+schedule = "*"
+python-gnupg = "*"
+redis = "*"
+certifi = "==2017.11.5"
+
+
+[dev-packages]
+
