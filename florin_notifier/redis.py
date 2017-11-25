@@ -1,11 +1,16 @@
 import json
+import os
 from redis import Redis
 
 
 DAY = 24 * 60 * 60
 
 
-r = Redis()
+REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+
+REDIS_PORT = os.getenv('REDIS_PORT', 6379)
+
+r = Redis(host=REDIS_HOST, port=REDIS_PORT)
 
 
 def store(key, obj):
