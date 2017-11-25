@@ -14,6 +14,7 @@ redis = "*"
 celery = {extras = ["redis"]}
 sendgrid = "*"
 "jinja2" = "*"
+pyyaml = "*"
 
 
 [dev-packages]
