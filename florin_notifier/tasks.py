@@ -5,9 +5,9 @@ import os
 from rogersbank.client import RogersBankClient
 from rogersbank.secret_provider import DictionaryBasedSecretProvider
 import gnupg
-from redis import Redis
 import sendgrid
 from sendgrid.helpers.mail import Email, Content, Mail
+from .redis import r
 
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ def get_new_transactions(previous, current):
 
 
 def send_email(sendgrid_api_key, recipient, content):
-    sg = sendgrid.SendGridAPIClient(apikey=os.getenv('SENDGRID_API_KEY'))
+    sg = sendgrid.SendGridAPIClient(apikey=sendgrid_api_key)
     from_email = Email('noreply@idempotent.ca')
     to_email = Email(recipient)
     subject = 'New Transactions'
@@ -41,8 +41,7 @@ def send_email(sendgrid_api_key, recipient, content):
     print(response.headers)
 
 
-def notify_new_transactions(secret_file, recipient):
-    r = Redis()
+def notify_new_transactions(account_name, secret_file, recipient):
     secret_provider = create_provider(secret_file)
     client = RogersBankClient(secret_provider)
     previous_scrapes = sorted(r.keys('scrape:rogersbank:*'))
