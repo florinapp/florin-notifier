@@ -1,0 +1,14 @@
+version: "2"
+services:
+    redis:
+        image: redis:4-alpine
+    florin_notifier:
+        image: kevinjqiu/florin-notifier:e3cb7b7aa1d68ad3bf78507b294279904a2100ba
+        volumes:
+            - ./id.gpg.key:/root/id.gpg.key
+            - ./config.yaml:/app/config.yaml
+            - ./secrets/:/app/secrets
+        environment:
+            REDIS_HOST: redis
+        command:
+            - /entrypoint.sh
