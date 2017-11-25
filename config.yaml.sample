@@ -1,7 +1,7 @@
 jobs:
     - type: notify_new_transactions
       args:
-          name: Bank
+          account_name: Bank
           secret_file: secret.json.gpg
           recipient: me@example.com
       schedule:
