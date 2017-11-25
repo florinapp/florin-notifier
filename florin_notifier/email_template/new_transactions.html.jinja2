@@ -1,0 +1,22 @@
+<html>
+<head><title>New Transactions for {{ account_name }}</title></head>
+<body>
+    <table>
+    <thead>
+        <tr><td>Date</td>
+            <td>Description</td>
+            <td>Amount</td>
+        </tr>
+    </thead>
+    <tbody>
+    {% for t in txns %}
+        <tr>
+            <td>{{ t["date"] }}</td>
+            <td>{{ t["description"] }}</td>
+            <td>{{ t["amount"] }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+    </table>
+</body>
+</html>

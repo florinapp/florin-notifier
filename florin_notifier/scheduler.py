@@ -17,4 +17,4 @@ logging.basicConfig(level='INFO')
 def setup(sender, **kwargs):
     sender.add_periodic_task(
         crontab(minute="*/1"),
-        notify_new_transactions.s('rogersbank.json.gpg', 'kevin.jing.qiu@gmail.com'))
+        notify_new_transactions.s('Rogers Mastercard', 'rogersbank.json.gpg', 'kevin.jing.qiu@gmail.com'))

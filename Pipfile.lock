@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "d007a316b2652de4c6160dc85a69e1d20a3b679fec6aa54f7b94684ec4f1f536"
+            "sha256": "4fad957173b48766c730fc7c9513fd10bb2282a3c77349881415df01b21d7251"
         },
         "host-environment-markers": {
             "implementation_name": "cpython",
@@ -77,6 +77,13 @@
             ],
             "version": "==2.6"
         },
+        "jinja2": {
+            "hashes": [
+                "sha256:74c935a1b8bb9a3947c50a54766a969d4846290e1e788ea44c1392163723c3bd",
+                "sha256:f84be1bb0040caca4cea721fcbbbbd61f9be9464ca236387158b0feea01914a4"
+            ],
+            "version": "==2.10"
+        },
         "kombu": {
             "hashes": [
                 "sha256:01f0da9fe222a2183345004243d1518c0fbe5875955f1b24842f2d9c65709ade",
@@ -116,6 +123,12 @@
                 "sha256:940caef1ec7c78e0c34b0f6b94fe42d0f2022915ffc78643d28538a5cfd0f40e"
             ],
             "version": "==4.1.1"
+        },
+        "markupsafe": {
+            "hashes": [
+                "sha256:a6be69091dac236ea9c6bc7d012beab42010fa914c459791d627dad4910eb665"
+            ],
+            "version": "==1.0"
         },
         "mechanicalsoup": {
             "hashes": [

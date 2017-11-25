@@ -13,6 +13,7 @@ python-gnupg = "*"
 redis = "*"
 celery = {extras = ["redis"]}
 sendgrid = "*"
+"jinja2" = "*"
 
 
 [dev-packages]
