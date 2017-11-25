@@ -1,5 +1,5 @@
 build:
-	docker build -t florin-notifier:$(shell git rev-parse HEAD) .
+	docker build -t kevinjqiu/florin-notifier:$(shell git rev-parse HEAD) .
 
 push:
-	docker push florin-notifier:$(shell git rev-parse HEAD)
+	docker push kevinjqiu/florin-notifier:$(shell git rev-parse HEAD)
