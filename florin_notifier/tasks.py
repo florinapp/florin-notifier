@@ -50,8 +50,20 @@ class NewTransactionNotifier():
     def client(self):
         return self._tangerine_client
 
-    def send_email(self, recipient, email_content):
-        send_email(self._sendgrid_client, recipient, email_content)
+    def send_email(self, new_transactions):
+        if not len(new_transactions):
+            logger.info('No new transactions')
+            return
+
+        logger.info('{} new transactions discovered'.format(len(new_transactions)))
+        email_content = render_template(
+            'new_transactions.html.jinja2',
+            {
+                'txns': new_transactions,
+                'account_ids': self._account_ids,
+            }
+        )
+        send_email(self._sendgrid_client, self._recipient, email_content)
 
     def __call__(self):
         previous_scrapes = redis.get_sorted_keys('{}*'.format(self.key_prefix))
@@ -80,18 +92,7 @@ class NewTransactionNotifier():
             redis.store(key, current)
 
         new_transactions = get_new_transactions(previous, current)
-        if len(new_transactions):
-            logger.info('{} new transactions discovered'.format(len(new_transactions)))
-            email_content = render_template(
-                'new_transactions.html.jinja2',
-                {
-                    'txns': new_transactions,
-                    'account_ids': self._account_ids,
-                }
-            )
-            self.send_email(self._recipient, email_content)
-        else:
-            logger.info('No new transactions')
+        self.send_email(new_transactions)
 
 
 def notify_tangerine_transactions(account_ids, secret_file, recipient, tangerine_client=None, sendgrid_client=None):
