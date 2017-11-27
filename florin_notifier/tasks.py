@@ -50,6 +50,9 @@ class NewTransactionNotifier():
     def client(self):
         return self._tangerine_client
 
+    def get_new_transactions(self, previous, current):
+        return [txn for txn in current if txn not in previous]
+
     def __call__(self):
         previous_scrapes = redis.get_sorted_keys('{}*'.format(self.key_prefix))
 
@@ -76,7 +79,7 @@ class NewTransactionNotifier():
             current = self.client.list_transactions(self._account_ids, period_from=from_, period_to=to_)
             redis.store(key, current)
 
-        new_transactions = get_new_transactions(previous, current)
+        new_transactions = self.get_new_transactions(previous, current)
         self._email.send_new_transaction_email(self._recipient, new_transactions)
 
 
