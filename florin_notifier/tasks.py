@@ -58,6 +58,18 @@ class NewTransactionNotifier():
             account_new_txns[new_txn['account_id']].append(new_txn)
         return account_new_txns
 
+    def transaction_adapter(self, t):
+        """Adapts the transaction so it can be rendered by the template.
+
+        The template requires keys:
+            - date
+            - amount
+            - description
+        """
+        t = dict(t)
+        t['date'] = t['posted_date']
+        return t
+
     def __call__(self):
         previous_scrapes = redis.get_sorted_keys('{}*'.format(self.key_prefix))
 
@@ -85,7 +97,7 @@ class NewTransactionNotifier():
             redis.store(key, current)
 
         new_transactions = self.get_new_transactions(previous, current)
-        self._email.send_new_transaction_email(self._recipient, new_transactions)
+        self._email.send_new_transaction_email(self._recipient, new_transactions, self.transaction_adapter)
 
 
 def notify_tangerine_transactions(account_ids,

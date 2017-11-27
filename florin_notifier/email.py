@@ -23,7 +23,7 @@ def sendgrid_client():
     return sendgrid.SendGridAPIClient(apikey=sendgrid_api_key)
 
 
-def send_new_transaction_email(recipient, new_transactions):
+def send_new_transaction_email(recipient, new_transactions, transaction_adapter):
     if not len(new_transactions):
         logger.info('No new transactions')
         return
@@ -34,6 +34,7 @@ def send_new_transaction_email(recipient, new_transactions):
         {
             'txns': new_transactions,
             'account_ids': self._account_ids,
+            'transaction_adapter': transaction_adapter,
         }
     )
     from_email = Email('noreply@idempotent.ca')

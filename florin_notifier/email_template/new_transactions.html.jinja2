@@ -1,6 +1,8 @@
 <html>
-<head><title>New Transactions for {{ account_name }}</title></head>
+<head><title>New Transactions</title></head>
 <body>
+    {% for acct, ts in txns.iteritems() %}
+    <p>{{ acct }}</p>
     <table>
     <thead>
         <tr><td>Date</td>
@@ -9,14 +11,16 @@
         </tr>
     </thead>
     <tbody>
-    {% for t in txns %}
+    {% for t in ts %}
+    {% set adapted_txn = adapter(t) %}
         <tr>
-            <td>{{ t["date"] }}</td>
-            <td>{{ t["description"] }}</td>
-            <td>{{ t["amount"] }}</td>
+            <td>{{ adapted_txn["date"] }}</td>
+            <td>{{ adapted_txn["description"] }}</td>
+            <td>{{ adapted_txn["amount"] }}</td>
         </tr>
     {% endfor %}
     </tbody>
     </table>
+    {% endfor %}
 </body>
 </html>
