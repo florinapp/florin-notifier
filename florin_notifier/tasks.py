@@ -102,7 +102,7 @@ def notify_new_transactions(account_name, secret_file, recipient):
             }
         )
         send_email(
-            sendgrid_client(secret_provider.secret_dict['sendgrid_api_key']),
+            sendgrid_client(config['sendgrid_api_key']),
             recipient, email_content)
     else:
         logger.info('No new transactions')
