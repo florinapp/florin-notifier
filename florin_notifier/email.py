@@ -3,6 +3,7 @@ import sendgrid
 import logging
 from sendgrid.helpers.mail import Email, Content, Mail
 from jinja2 import Environment, FileSystemLoader
+from .config import config
 
 
 EMAIL_TEMPLATE_DIR = os.path.join(
@@ -17,17 +18,30 @@ env = Environment(loader=FileSystemLoader(EMAIL_TEMPLATE_DIR),
 logger = logging.getLogger(__name__)
 
 
-def sendgrid_client(sendgrid_api_key):
+def sendgrid_client():
+    sendgrid_api_key = config['SENDGRID_API_KEY']
     return sendgrid.SendGridAPIClient(apikey=sendgrid_api_key)
 
 
-def send_email(sendgrid_client, recipient, content):
+def send_new_transaction_email(recipient, new_transactions):
+    if not len(new_transactions):
+        logger.info('No new transactions')
+        return
+
+    logger.info('{} new transactions discovered'.format(len(new_transactions)))
+    email_content = render_template(
+        'new_transactions.html.jinja2',
+        {
+            'txns': new_transactions,
+            'account_ids': self._account_ids,
+        }
+    )
     from_email = Email('noreply@idempotent.ca')
     to_email = Email(recipient)
     subject = 'New Transactions'
     content = Content('text/html', content)
     mail = Mail(from_email, subject, to_email, content)
-    response = sendgrid_client.client.mail.send.post(request_body=mail.get())
+    response = sendgrid_client().client.mail.send.post(request_body=mail.get())
     logger.info(response.status_code)
     logger.info(response.body)
     logger.info(response.headers)

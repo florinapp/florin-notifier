@@ -7,7 +7,7 @@ from rogersbank.client import RogersBankClient
 from rogersbank.secret_provider import DictionaryBasedSecretProvider as RogersBankSecretProvider
 from tangerine import TangerineClient, DictionaryBasedSecretProvider as TangerineSecretProvider
 import gnupg
-from .email import sendgrid_client, send_email, render_template
+from .email import send_new_transaction_email, render_template
 from . import redis
 from .config import config
 
@@ -28,7 +28,7 @@ def get_new_transactions(previous, current):
 
 
 class NewTransactionNotifier():
-    def __init__(self, account_ids, secret_file, recipient, tangerine_client=None, sendgrid_client=None):
+    def __init__(self, account_ids, secret_file, recipient, tangerine_client=None, email=None):
         self._account_ids = account_ids
         self._secret_file = secret_file
         self._recipient = recipient
@@ -38,9 +38,9 @@ class NewTransactionNotifier():
             tangerine_client = TangerineClient(secret_provider)
         self._tangerine_client = tangerine_client
 
-        if not sendgrid_client:
-            sendgrid_client = sendgrid_client(config['sendgrid_api_key'])
-        self._sendgrid_client = sendgrid_client
+        if not email:
+            from . import email
+        self._email = email
 
     @property
     def key_prefix(self):
@@ -49,21 +49,6 @@ class NewTransactionNotifier():
     @property
     def client(self):
         return self._tangerine_client
-
-    def send_email(self, new_transactions):
-        if not len(new_transactions):
-            logger.info('No new transactions')
-            return
-
-        logger.info('{} new transactions discovered'.format(len(new_transactions)))
-        email_content = render_template(
-            'new_transactions.html.jinja2',
-            {
-                'txns': new_transactions,
-                'account_ids': self._account_ids,
-            }
-        )
-        send_email(self._sendgrid_client, self._recipient, email_content)
 
     def __call__(self):
         previous_scrapes = redis.get_sorted_keys('{}*'.format(self.key_prefix))
@@ -92,11 +77,15 @@ class NewTransactionNotifier():
             redis.store(key, current)
 
         new_transactions = get_new_transactions(previous, current)
-        self.send_email(new_transactions)
+        self._email.send_new_transaction_email(self._recipient, new_transactions)
 
 
-def notify_tangerine_transactions(account_ids, secret_file, recipient, tangerine_client=None, sendgrid_client=None):
-    notifier = NewTransactionNotifier(account_ids, secret_file, recipient, tangerine_client, sendgrid_client)
+def notify_tangerine_transactions(account_ids,
+                                  secret_file,
+                                  recipient,
+                                  tangerine_client=None,
+                                  email=None):
+    notifier = NewTransactionNotifier(account_ids, secret_file, recipient, tangerine_client, email)
     return notifier()
 
 
@@ -125,7 +114,7 @@ def notify_new_transactions(account_name, secret_file, recipient):
                 'account_name': account_name,
             }
         )
-        send_email(
+        send_new_transaction_email(
             sendgrid_client(config['sendgrid_api_key']),
             recipient, email_content)
     else:
