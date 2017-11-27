@@ -15,6 +15,7 @@ celery = {extras = ["redis"]}
 sendgrid = "*"
 "jinja2" = "*"
 pyyaml = "*"
+dateutils = "*"
 
 
 [dev-packages]

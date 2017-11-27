@@ -32,15 +32,15 @@ def sendgrid_client():
     return mock.Mock()
 
 
-@freezegun.freeze_time('2017-11-10 12:00:00')
+@freezegun.freeze_time('2017-11-10T12:00:00')
 def test_notify_tangerine_transactions___no_previous_scrapes(redis, tangerine_client, sendgrid_client):
     tangerine_client.list_transactions.return_value = []
     notify_tangerine_transactions(['12345', '45678'], 'SECRET', 'foo@example.com', tangerine_client, sendgrid_client)
-    assert redis.keys('scrape:tangerine*') == [b'scrape:tangerine:20171110120000']
-    assert redis.get(b'scrape:tangerine:20171110120000') == b'[]'
+    assert redis.keys('scrape:tangerine*') == [b'scrape:tangerine:2017-11-10T12:00:00']
+    assert redis.get(b'scrape:tangerine:2017-11-10T12:00:00') == b'[]'
 
 
-@freezegun.freeze_time('2017-11-10 12:00:00')
+@freezegun.freeze_time('2017-11-10T12:00:00.1111')
 def test_notify_tangerine_transactions___with_previous_scrape_on_a_different_day(redis,
                                                                                  tangerine_client, sendgrid_client):
     txn_1 = {
@@ -63,7 +63,9 @@ def test_notify_tangerine_transactions___with_previous_scrape_on_a_different_day
         'posted_date': '2017-11-04T00:00:00',
         'status': 'POSTED'
     }
-    redis.set('scrape:tangerine:20171109121011', json.dumps([txn_1]))
+    redis.set('scrape:tangerine:2017-11-09T12:10:11', json.dumps([txn_1]))
     tangerine_client.list_transactions.return_value = [txn_2]
     notify_tangerine_transactions(['12345', '45678'], 'SECRET', 'foo@example.com', tangerine_client, sendgrid_client)
-    assert redis.keys('scrape:tangerine*') == [b'scrape:tangerine:20171109121011', b'scrape:tangerine:20171110120000']
+    assert redis.keys('scrape:tangerine*') == [
+        b'scrape:tangerine:2017-11-09T12:10:11',
+        b'scrape:tangerine:2017-11-10T12:00:00.111100']

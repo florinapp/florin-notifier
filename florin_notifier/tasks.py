@@ -1,3 +1,4 @@
+import dateutils
 import logging
 import json
 import datetime
@@ -45,7 +46,8 @@ def notify_tangerine_transactions(account_ids, secret_file, recipient, tangerine
         key = previous_scrapes[-1]
         try:
             from_ = key.split('scrape:tangerine:')[-1]
-            from_ = datetime.strptime(from_, '%Y%m%d%H%M%S').date()
+            # from_ = datetime.strptime(from_, '%Y%m%d%H%M%S').date()
+            from_ = dateutils.parser.parse(from_).date()
             previous = redis.retrieve(key)
         except:
             logger.warn('Could not process key: {}.'.format(key))
@@ -54,7 +56,8 @@ def notify_tangerine_transactions(account_ids, secret_file, recipient, tangerine
     to_ = now.date() + datetime.timedelta(days=1)
     logger.info('Scrapping from {} to {}'.format(from_, to_))
 
-    key = 'scrape:tangerine:{}'.format(now.strftime('%Y%m%d%H%M%S'))
+    # key = 'scrape:tangerine:{}'.format(now.strftime('%Y%m%d%H%M%S'))
+    key = 'scrape:tangerine:{}'.format(now.isoformat())
     with client.login():
         current = client.list_transactions(account_ids, period_from=from_, period_to=to_)
         redis.store(key, current)
