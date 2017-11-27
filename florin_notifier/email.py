@@ -1,5 +1,6 @@
 import os
 import sendgrid
+import logging
 from sendgrid.helpers.mail import Email, Content, Mail
 from jinja2 import Environment, FileSystemLoader
 
@@ -13,6 +14,9 @@ env = Environment(loader=FileSystemLoader(EMAIL_TEMPLATE_DIR),
                   trim_blocks=True)
 
 
+logger = logging.getLogger(__name__)
+
+
 def send_email(sendgrid_api_key, recipient, content):
     sg = sendgrid.SendGridAPIClient(apikey=sendgrid_api_key)
     from_email = Email('noreply@idempotent.ca')
@@ -21,9 +25,9 @@ def send_email(sendgrid_api_key, recipient, content):
     content = Content('text/html', content)
     mail = Mail(from_email, subject, to_email, content)
     response = sg.client.mail.send.post(request_body=mail.get())
-    print(response.status_code)
-    print(response.body)
-    print(response.headers)
+    logger.info(response.status_code)
+    logger.info(response.body)
+    logger.info(response.headers)
 
 
 def render_template(template_name, context):

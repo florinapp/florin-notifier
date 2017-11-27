@@ -3,7 +3,8 @@ import json
 import datetime
 import os
 from rogersbank.client import RogersBankClient
-from rogersbank.secret_provider import DictionaryBasedSecretProvider
+from rogersbank.secret_provider import DictionaryBasedSecretProvider as RogersBankSecretProvider
+from tangerine import TangerineClient, DictionaryBasedSecretProvider as TangerineSecretProvider
 import gnupg
 from .email import send_email, render_template
 from . import redis
@@ -12,20 +13,51 @@ from . import redis
 logger = logging.getLogger(__name__)
 
 
-def create_provider(filename):
+def create_provider(filename, provider_factory):
     gpg = gnupg.GPG(gnupghome=os.path.expanduser('~/.gnupg'))
     with open(filename) as f:
         crypt = gpg.decrypt(f.read())
     secret = json.loads(crypt.data.decode('ascii'))
-    return DictionaryBasedSecretProvider(secret)
+    return provider_factory(secret)
 
 
 def get_new_transactions(previous, current):
     return [txn for txn in current if txn not in previous]
 
 
+def notify_tangerine_transactions(account_ids, secret_file, recipient):
+    # the keys are in the format: scrape:tangerine:%Y%m%d%H%M%S
+    secret_provider = create_provider(secret_file, provider_factory=TangerineSecretProvider)
+    client = TangerineClient(secret_provider)
+    previous_scrapes = redis.get_sorted_keys('scrape:tangerine:*')
+
+    now = datetime.datetime.now()
+    if len(previous_scrapes) < 1:
+        previous = []
+        from_ = (now - datetime.timedelta(days=1)).date()
+    else:
+        key = previous_scrapes[-1]
+        try:
+            from_ = key.split('scrape:tangerine:')[-1]
+            from_ = datetime.strptime(from_, '%Y%m%d%H%M%S').date()
+            previous = redis.retrieve(key)
+        except:
+            logger.warn('Could not process key: {}.'.format(key))
+            previous = []
+
+    to_ = now.date() + datetime.timedelta(days=1)
+    logger.info('Scrapping from {} to {}'.format(from_, to_))
+
+    key = 'scrape:tangerine:{}'.format(to_.strftime('%Y%m%d%H%M%S'))
+    with client.login():
+        current = client.list_transactions(account_ids, period_from=from_, period_to=to_)
+        redis.store(key, current)
+
+    new_transactions = get_new_transactions(previous, current)
+
+
 def notify_new_transactions(account_name, secret_file, recipient):
-    secret_provider = create_provider(secret_file)
+    secret_provider = create_provider(secret_file, provider_factory=RogersBankSecretProvider)
     client = RogersBankClient(secret_provider)
     previous_scrapes = redis.get_sorted_keys('scrape:rogersbank:*')
     current_scrape_time = datetime.datetime.utcnow().isoformat()
