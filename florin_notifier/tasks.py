@@ -27,56 +27,76 @@ def get_new_transactions(previous, current):
     return [txn for txn in current if txn not in previous]
 
 
-def notify_tangerine_transactions(account_ids, secret_file, recipient, tangerine_client=None, sendgrid_client=None):
-    # the keys are in the format: scrape:tangerine:%Y%m%d%H%M%S
-    if not tangerine_client:
-        secret_provider = create_provider(secret_file, provider_factory=TangerineSecretProvider)
-        client = TangerineClient(secret_provider)
-    else:
-        client = tangerine_client
+class NewTransactionNotifier():
+    def __init__(self, account_ids, secret_file, recipient, tangerine_client=None, sendgrid_client=None):
+        self._account_ids = account_ids
+        self._secret_file = secret_file
+        self._recipient = recipient
 
-    previous_scrapes = redis.get_sorted_keys('scrape:tangerine:*')
+        if not tangerine_client:
+            secret_provider = create_provider(secret_file, provider_factory=TangerineSecretProvider)
+            tangerine_client = TangerineClient(secret_provider)
+        self._tangerine_client = tangerine_client
 
-    now = datetime.datetime.now()
-    from_ = (now - datetime.timedelta(days=1)).date()
-
-    if len(previous_scrapes) < 1:
-        previous = []
-    else:
-        key = previous_scrapes[-1]
-        try:
-            from_ = key.split('scrape:tangerine:')[-1]
-            # from_ = datetime.strptime(from_, '%Y%m%d%H%M%S').date()
-            from_ = dateutils.parser.parse(from_).date()
-            previous = redis.retrieve(key)
-        except:
-            logger.warn('Could not process key: {}.'.format(key))
-            previous = []
-
-    to_ = now.date() + datetime.timedelta(days=1)
-    logger.info('Scrapping from {} to {}'.format(from_, to_))
-
-    # key = 'scrape:tangerine:{}'.format(now.strftime('%Y%m%d%H%M%S'))
-    key = 'scrape:tangerine:{}'.format(now.isoformat())
-    with client.login():
-        current = client.list_transactions(account_ids, period_from=from_, period_to=to_)
-        redis.store(key, current)
-
-    new_transactions = get_new_transactions(previous, current)
-    if len(new_transactions):
-        logger.info('{} new transactions discovered'.format(len(new_transactions)))
-        email_content = render_template(
-            'new_transactions.html.jinja2',
-            {
-                'txns': new_transactions,
-                'account_ids': account_ids,
-            }
-        )
-        if sendgrid_client is None:
+        if not sendgrid_client:
             sendgrid_client = sendgrid_client(config['sendgrid_api_key'])
-        send_email(sendgrid_client, recipient, email_content)
-    else:
-        logger.info('No new transactions')
+        self._sendgrid_client = sendgrid_client
+
+    @property
+    def key_prefix(self):
+        return 'scrape:tangerine:'
+
+    @property
+    def client(self):
+        return self._tangerine_client
+
+    def send_email(self, recipient, email_content):
+        send_email(self._sendgrid_client, recipient, email_content)
+
+    def __call__(self):
+        previous_scrapes = redis.get_sorted_keys('{}*'.format(self.key_prefix))
+
+        now = datetime.datetime.now()
+        from_ = (now - datetime.timedelta(days=1)).date()
+
+        if len(previous_scrapes) < 1:
+            previous = []
+        else:
+            key = previous_scrapes[-1]
+            try:
+                from_ = key.split(self.key_prefix)[-1]
+                from_ = dateutils.parser.parse(from_).date()
+                previous = redis.retrieve(key)
+            except:
+                logger.warn('Could not process key: {}.'.format(key))
+                previous = []
+
+        to_ = now.date() + datetime.timedelta(days=1)
+        logger.info('Scrapping from {} to {}'.format(from_, to_))
+
+        key = '{}{}'.format(self.key_prefix, now.isoformat())
+        with self.client.login():
+            current = self.client.list_transactions(self._account_ids, period_from=from_, period_to=to_)
+            redis.store(key, current)
+
+        new_transactions = get_new_transactions(previous, current)
+        if len(new_transactions):
+            logger.info('{} new transactions discovered'.format(len(new_transactions)))
+            email_content = render_template(
+                'new_transactions.html.jinja2',
+                {
+                    'txns': new_transactions,
+                    'account_ids': self._account_ids,
+                }
+            )
+            self.send_email(self._recipient, email_content)
+        else:
+            logger.info('No new transactions')
+
+
+def notify_tangerine_transactions(account_ids, secret_file, recipient, tangerine_client=None, sendgrid_client=None):
+    notifier = NewTransactionNotifier(account_ids, secret_file, recipient, tangerine_client, sendgrid_client)
+    return notifier()
 
 
 def notify_new_transactions(account_name, secret_file, recipient):
