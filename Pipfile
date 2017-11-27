@@ -19,3 +19,6 @@ pyyaml = "*"
 
 [dev-packages]
 
+pytest = "*"
+freezegun = "*"
+mock = "*"

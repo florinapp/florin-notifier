@@ -17,14 +17,17 @@ env = Environment(loader=FileSystemLoader(EMAIL_TEMPLATE_DIR),
 logger = logging.getLogger(__name__)
 
 
-def send_email(sendgrid_api_key, recipient, content):
-    sg = sendgrid.SendGridAPIClient(apikey=sendgrid_api_key)
+def sendgrid_client(sendgrid_api_key):
+    return sendgrid.SendGridAPIClient(apikey=sendgrid_api_key)
+
+
+def send_email(sendgrid_client, recipient, content):
     from_email = Email('noreply@idempotent.ca')
     to_email = Email(recipient)
     subject = 'New Transactions'
     content = Content('text/html', content)
     mail = Mail(from_email, subject, to_email, content)
-    response = sg.client.mail.send.post(request_body=mail.get())
+    response = sendgrid_client.client.mail.send.post(request_body=mail.get())
     logger.info(response.status_code)
     logger.info(response.body)
     logger.info(response.headers)

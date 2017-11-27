@@ -6,8 +6,9 @@ from rogersbank.client import RogersBankClient
 from rogersbank.secret_provider import DictionaryBasedSecretProvider as RogersBankSecretProvider
 from tangerine import TangerineClient, DictionaryBasedSecretProvider as TangerineSecretProvider
 import gnupg
-from .email import send_email, render_template
+from .email import sendgrid_client, send_email, render_template
 from . import redis
+from .config import config
 
 
 logger = logging.getLogger(__name__)
@@ -25,16 +26,21 @@ def get_new_transactions(previous, current):
     return [txn for txn in current if txn not in previous]
 
 
-def notify_tangerine_transactions(account_ids, secret_file, recipient):
+def notify_tangerine_transactions(account_ids, secret_file, recipient, tangerine_client=None, sendgrid_client=None):
     # the keys are in the format: scrape:tangerine:%Y%m%d%H%M%S
-    secret_provider = create_provider(secret_file, provider_factory=TangerineSecretProvider)
-    client = TangerineClient(secret_provider)
+    if not tangerine_client:
+        secret_provider = create_provider(secret_file, provider_factory=TangerineSecretProvider)
+        client = TangerineClient(secret_provider)
+    else:
+        client = tangerine_client
+
     previous_scrapes = redis.get_sorted_keys('scrape:tangerine:*')
 
     now = datetime.datetime.now()
+    from_ = (now - datetime.timedelta(days=1)).date()
+
     if len(previous_scrapes) < 1:
         previous = []
-        from_ = (now - datetime.timedelta(days=1)).date()
     else:
         key = previous_scrapes[-1]
         try:
@@ -48,12 +54,26 @@ def notify_tangerine_transactions(account_ids, secret_file, recipient):
     to_ = now.date() + datetime.timedelta(days=1)
     logger.info('Scrapping from {} to {}'.format(from_, to_))
 
-    key = 'scrape:tangerine:{}'.format(to_.strftime('%Y%m%d%H%M%S'))
+    key = 'scrape:tangerine:{}'.format(now.strftime('%Y%m%d%H%M%S'))
     with client.login():
         current = client.list_transactions(account_ids, period_from=from_, period_to=to_)
         redis.store(key, current)
 
     new_transactions = get_new_transactions(previous, current)
+    if len(new_transactions):
+        logger.info('{} new transactions discovered'.format(len(new_transactions)))
+        email_content = render_template(
+            'new_transactions.html.jinja2',
+            {
+                'txns': new_transactions,
+                'account_ids': account_ids,
+            }
+        )
+        if sendgrid_client is None:
+            sendgrid_client = sendgrid_client(config['sendgrid_api_key'])
+        send_email(sendgrid_client, recipient, email_content)
+    else:
+        logger.info('No new transactions')
 
 
 def notify_new_transactions(account_name, secret_file, recipient):
@@ -81,6 +101,8 @@ def notify_new_transactions(account_name, secret_file, recipient):
                 'account_name': account_name,
             }
         )
-        send_email(secret_provider.secret_dict['sendgrid_api_key'], recipient, email_content)
+        send_email(
+            sendgrid_client(secret_provider.secret_dict['sendgrid_api_key']),
+            recipient, email_content)
     else:
         logger.info('No new transactions')
