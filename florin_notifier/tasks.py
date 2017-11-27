@@ -3,10 +3,11 @@ import logging
 import json
 import datetime
 import os
+import gnupg
 from rogersbank.client import RogersBankClient
 from rogersbank.secret_provider import DictionaryBasedSecretProvider as RogersBankSecretProvider
 from tangerine import TangerineClient, DictionaryBasedSecretProvider as TangerineSecretProvider
-import gnupg
+from collections import defaultdict
 from .email import send_new_transaction_email, render_template
 from . import redis
 from .config import config
@@ -51,7 +52,11 @@ class NewTransactionNotifier():
         return self._tangerine_client
 
     def get_new_transactions(self, previous, current):
-        return [txn for txn in current if txn not in previous]
+        new_txns = [txn for txn in current if txn not in previous]
+        account_new_txns = defaultdict(list)
+        for new_txn in new_txns:
+            account_new_txns[new_txn['account_id']].append(new_txn)
+        return account_new_txns
 
     def __call__(self):
         previous_scrapes = redis.get_sorted_keys('{}*'.format(self.key_prefix))

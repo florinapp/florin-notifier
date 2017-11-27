@@ -75,7 +75,7 @@ def test_notify_tangerine_transactions___with_previous_scrape_on_a_different_day
         b'scrape:tangerine:2017-11-09T12:10:11',
         b'scrape:tangerine:2017-11-10T12:00:00.111100']
 
-    assert email.send_new_transaction_email.call_args_list == [call('foo@example.com', [txn_2])]
+    assert email.send_new_transaction_email.call_args_list == [call('foo@example.com', {'12345': [txn_2]})]
 
 
 @freezegun.freeze_time('2017-11-10T12:00:00.1111')
@@ -118,4 +118,8 @@ def test_notify_tangerine_transactions___with_previous_scrape_on_a_different_day
     assert redis.keys('scrape:tangerine*') == [
         b'scrape:tangerine:2017-11-09T12:10:11',
         b'scrape:tangerine:2017-11-10T12:00:00.111100']
-    assert email.send_new_transaction_email.call_args_list == [call('foo@example.com', [txn_2, txn_3])]
+    assert email.send_new_transaction_email.call_args_list == [
+        call('foo@example.com',
+             {'12345': [txn_2],
+              '45678': [txn_3]})
+    ]
