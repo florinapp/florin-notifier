@@ -1,4 +1,3 @@
-import dateutils
 import logging
 import json
 import datetime
@@ -8,9 +7,7 @@ from rogersbank.client import RogersBankClient
 from rogersbank.secret_provider import DictionaryBasedSecretProvider as RogersBankSecretProvider
 from tangerine import TangerineClient, DictionaryBasedSecretProvider as TangerineSecretProvider
 from collections import defaultdict
-from .email import send_new_transaction_email, render_template
 from . import redis
-from .config import config
 
 
 logger = logging.getLogger(__name__)
@@ -82,8 +79,9 @@ class NewTransactionNotifier():
         else:
             key = previous_scrapes[-1]
             try:
+                key = key.decode('ascii')
                 from_ = key.split(self.key_prefix)[-1]
-                from_ = dateutils.parser.parse(from_).date()
+                from_ = datetime.datetime.strptime(from_, '%Y-%m-%dT%H:%M:%S.%f')
                 previous = redis.retrieve(key)
             except:
                 logger.warn('Could not process key: {}.'.format(key))
@@ -135,7 +133,7 @@ class RogersBankTransactionNotifier(NewTransactionNotifier):
         return self.client.recent_activities
 
     def group_transactions_by_account_id(self, txns):
-        return {self._account_ids[0], txns}  # TODO: single account supported currently
+        return {self._account_ids[0]: txns}  # TODO: single account supported currently
 
 
 def notify_tangerine_transactions(account_ids,

@@ -1,16 +1,15 @@
-import os
 import logging
 from celery import Celery
 from celery.schedules import crontab
 from .tasks import (
-    notify_new_transactions as _notify_new_transactions,
+    notify_rogersbank_transactions as _notify_rogersbank_transactions,
     notify_tangerine_transactions as _notify_tangerine_transactions)
 from .config import config
 
 
 app = Celery()
 
-notify_new_transactions = app.task(_notify_new_transactions)
+notify_rogersbank_transactions = app.task(_notify_rogersbank_transactions)
 notify_tangerine_transactions = app.task(_notify_tangerine_transactions)
 
 

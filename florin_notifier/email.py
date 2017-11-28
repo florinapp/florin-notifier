@@ -19,12 +19,12 @@ logger = logging.getLogger(__name__)
 
 
 def sendgrid_client():
-    sendgrid_api_key = config['SENDGRID_API_KEY']
+    sendgrid_api_key = config['sendgrid_api_key']
     return sendgrid.SendGridAPIClient(apikey=sendgrid_api_key)
 
 
 def send_new_transaction_email(recipient, new_transactions, transaction_adapter):
-    if not len(new_transactions):
+    if all(lambda v: len(v) == 0, new_transactions.values()):
         logger.info('No new transactions')
         return
 
@@ -33,14 +33,13 @@ def send_new_transaction_email(recipient, new_transactions, transaction_adapter)
         'new_transactions.html.jinja2',
         {
             'txns': new_transactions,
-            'account_ids': self._account_ids,
             'transaction_adapter': transaction_adapter,
         }
     )
     from_email = Email('noreply@idempotent.ca')
     to_email = Email(recipient)
     subject = 'New Transactions'
-    content = Content('text/html', content)
+    content = Content('text/html', email_content)
     mail = Mail(from_email, subject, to_email, content)
     response = sendgrid_client().client.mail.send.post(request_body=mail.get())
     logger.info(response.status_code)
