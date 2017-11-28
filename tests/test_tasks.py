@@ -2,7 +2,7 @@ import json
 import freezegun
 import pytest
 import mock
-from mock import call
+import os
 import contextlib
 from redis import Redis
 from florin_notifier.tasks import notify_tangerine_transactions
@@ -10,7 +10,7 @@ from florin_notifier.tasks import notify_tangerine_transactions
 
 @pytest.fixture
 def redis():
-    r = Redis()
+    r = Redis(host=os.getenv('REDIS_HOST', 'localhost'), port=os.getenv('REDIS_PORT', 6379))
     for key in r.scan_iter("scrape:*"):
         r.delete(key)
     return r
@@ -71,7 +71,7 @@ def test_notify_tangerine_transactions___with_previous_scrape_on_a_different_day
     redis.set('scrape:tangerine:2017-11-09T12:10:11', json.dumps([txn_1]))
     tangerine_client.list_transactions.return_value = [txn_2]
     notify_tangerine_transactions(['12345', '45678'], 'SECRET', 'foo@example.com', tangerine_client, email)
-    assert redis.keys('scrape:tangerine*') == [
+    assert sorted(redis.keys('scrape:tangerine*')) == [
         b'scrape:tangerine:2017-11-09T12:10:11',
         b'scrape:tangerine:2017-11-10T12:00:00.111100']
 
@@ -115,7 +115,7 @@ def test_notify_tangerine_transactions___with_previous_scrape_on_a_different_day
     redis.set('scrape:tangerine:2017-11-09T12:10:11', json.dumps([txn_1]))
     tangerine_client.list_transactions.return_value = [txn_2, txn_3]
     notify_tangerine_transactions(['12345', '45678'], 'SECRET', 'foo@example.com', tangerine_client, email)
-    assert redis.keys('scrape:tangerine*') == [
+    assert sorted(redis.keys('scrape:tangerine*')) == [
         b'scrape:tangerine:2017-11-09T12:10:11',
         b'scrape:tangerine:2017-11-10T12:00:00.111100']
     assert email.send_new_transaction_email.call_args_list[0][0][:2] == ('foo@example.com',

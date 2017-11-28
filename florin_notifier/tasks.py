@@ -100,6 +100,10 @@ class NewTransactionNotifier():
         self._email.send_new_transaction_email(self._recipient, new_transactions, self.transaction_adapter)
 
 
+class RogersBankTransactionNotifier(NewTransactionNotifier):
+    pass
+
+
 def notify_tangerine_transactions(account_ids,
                                   secret_file,
                                   recipient,
