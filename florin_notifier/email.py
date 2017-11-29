@@ -24,7 +24,7 @@ def sendgrid_client():
 
 
 def send_new_transaction_email(recipient, new_transactions, transaction_adapter):
-    if all(lambda v: len(v) == 0, new_transactions.values()):
+    if all(map(lambda v: len(v) == 0, new_transactions.values())):
         logger.info('No new transactions')
         return
 

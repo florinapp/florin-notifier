@@ -12,7 +12,7 @@
     </thead>
     <tbody>
     {% for t in ts %}
-    {% set adapted_txn = adapter(t) %}
+    {% set adapted_txn = transaction_adapter(t) %}
         <tr>
             <td>{{ adapted_txn["date"] }}</td>
             <td>{{ adapted_txn["description"] }}</td>
