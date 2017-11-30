@@ -127,7 +127,7 @@ class RogersBankTransactionNotifier(NewTransactionNotifier):
 
     @property
     def key_prefix(self):
-        return 'scrape:tangerine:'
+        return 'scrape:rogersbank:'
 
     def fetch_current_transactions(self, period_from, period_to):
         return self.client.recent_activities
