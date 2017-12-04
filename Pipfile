@@ -16,6 +16,7 @@ sendgrid = "*"
 "jinja2" = "*"
 pyyaml = "*"
 dateutils = "*"
+requests = "*"
 
 
 [dev-packages]

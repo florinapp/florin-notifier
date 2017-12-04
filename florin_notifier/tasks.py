@@ -1,3 +1,5 @@
+import base64
+import requests
 import logging
 import json
 import datetime
@@ -159,33 +161,48 @@ def notify_rogersbank_transactions(account_ids,
     notifier = RogersBankTransactionNotifier(account_ids, recipient, rogersbank_client, email)
     return notifier()
 
-# def notify_new_transactions(account_name, secret_file, recipient):
-#     secret_provider = create_provider(secret_file, provider_factory=RogersBankSecretProvider)
-#     client = RogersBankClient(secret_provider)
-#     previous_scrapes = redis.get_sorted_keys('scrape:rogersbank:*')
-#     current_scrape_time = datetime.datetime.utcnow().isoformat()
-#     key = 'scrape:rogersbank:{}'.format(current_scrape_time)
-#     with client.login():
-#         current = client.recent_activities
-#         redis.store(key, current)
 
-#     if len(previous_scrapes) < 1:
-#         previous = []
-#     else:
-#         previous = redis.retrieve(previous_scrapes[-1])
+class FireflyStatementImporter():
+    pass
 
-#     new_transactions = get_new_transactions(previous, current)
-#     if len(new_transactions):
-#         logger.info('{} new transactions discovered'.format(len(new_transactions)))
-#         email_content = render_template(
-#             'new_transactions.html.jinja2',
-#             {
-#                 'txns': new_transactions,
-#                 'account_name': account_name,
-#             }
-#         )
-#         send_new_transaction_email(
-#             sendgrid_client(config['sendgrid_api_key']),
-#             recipient, email_content)
-#     else:
-#         logger.info('No new transactions')
+
+class RogersBankFireflyStatementImporter(FireflyStatementImporter):
+    def __init__(self, secret_file):
+        secret_provider = create_provider(secret_file, provider_factory=RogersBankSecretProvider)
+        self._client = RogersBankClient(secret_provider)
+
+    def __call__(self, account_ids, firefly_config):
+        assert len(account_ids) == 1
+        endpoint = firefly_config['endpoint']
+        account_id_mapping = firefly_config['account_id_mapping']
+
+        firefly_account_id = account_id_mapping[account_ids[0]]
+
+        with self._client.login():
+            content = self._client.download_statement('00', save=False)
+
+        response = requests.post(endpoint, json={
+            'user_id': firefly_config['user_id'],
+            'account_id': firefly_account_id,
+            'data': base64.b64encode(content.encode('ascii')).decode('ascii'),
+        })
+
+        response.raise_for_status()
+
+
+class TangerineFireflyStatementImporter(FireflyStatementImporter):
+    def __init__(self, secret_file):
+        secret_provider = create_provider(secret_file, provider_factory=TangerineSecretProvider)
+        self._client = TangerineClient(secret_provider)
+
+
+STATEMENT_IMPORTER = {
+    'rogersbank': RogersBankFireflyStatementImporter,
+    'tangerine': TangerineFireflyStatementImporter,
+}
+
+
+def upload_statement_to_firefly(bank, account_ids, secret_file, firefly_config, client=None):
+    assert bank in STATEMENT_IMPORTER
+    importer = STATEMENT_IMPORTER[bank](secret_file)
+    return importer(account_ids, firefly_config)

@@ -3,7 +3,9 @@ from celery import Celery
 from celery.schedules import crontab
 from .tasks import (
     notify_rogersbank_transactions as _notify_rogersbank_transactions,
-    notify_tangerine_transactions as _notify_tangerine_transactions)
+    notify_tangerine_transactions as _notify_tangerine_transactions,
+    upload_statement_to_firefly as _upload_statement_to_firefly,
+)
 from .config import config
 
 
@@ -11,6 +13,7 @@ app = Celery()
 
 notify_rogersbank_transactions = app.task(_notify_rogersbank_transactions)
 notify_tangerine_transactions = app.task(_notify_tangerine_transactions)
+upload_statement_to_firefly = app.task(_upload_statement_to_firefly)
 
 
 logging.basicConfig(level='INFO')
