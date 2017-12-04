@@ -9,6 +9,7 @@ from rogersbank.client import RogersBankClient
 from rogersbank.secret_provider import DictionaryBasedSecretProvider as RogersBankSecretProvider
 from tangerine import TangerineClient, DictionaryBasedSecretProvider as TangerineSecretProvider
 from collections import defaultdict
+from dateutil.relativedelta import relativedelta
 from . import redis
 
 
@@ -181,12 +182,13 @@ class RogersBankFireflyStatementImporter(FireflyStatementImporter):
         with self._client.login():
             content = self._client.download_statement('00', save=False)
 
-        response = requests.post(endpoint, json={
-            'user_id': firefly_config['user_id'],
-            'account_id': firefly_account_id,
-            'data': base64.b64encode(content.encode('ascii')).decode('ascii'),
-        })
-
+        response = requests.post(endpoint,
+                                 json={
+                                     'user_id': firefly_config['user_id'],
+                                     'account_id': firefly_account_id,
+                                     'data': base64.b64encode(content.encode('ascii')).decode('ascii'),
+                                 },
+                                 timeout=300)
         response.raise_for_status()
 
 
@@ -194,6 +196,44 @@ class TangerineFireflyStatementImporter(FireflyStatementImporter):
     def __init__(self, secret_file):
         secret_provider = create_provider(secret_file, provider_factory=TangerineSecretProvider)
         self._client = TangerineClient(secret_provider)
+
+    def _get_date_range(self):
+        today = datetime.date.today()
+        from_ = today - relativedelta(months=1)
+        to_ = today + relativedelta(days=1)
+        return from_, to_
+
+    def __call__(self, account_ids, firefly_config):
+        endpoint = firefly_config['endpoint']
+        account_id_mapping = firefly_config['account_id_mapping']
+        from_, to_ = self._get_date_range()
+
+        with self._client.login():
+            accounts = self._client.list_accounts()
+            accounts = {
+                acct['number']: acct
+                for acct in accounts
+            }
+            for account_id in account_ids:
+                account_obj = accounts.get(account_id)
+                if not account_obj:
+                    logger.warn('Account {} does not exist. Skip...'.format(account_id))
+                    continue
+                firefly_account_id = account_id_mapping.get(account_id)
+                if not firefly_account_id:
+                    logger.warn('Account {} does not have a corresponding firefly id. Skip...'.format(account_id))
+                    continue
+
+                content = self._client.download_ofx(account_obj, from_, to_, save=False)
+                response = requests.post(endpoint,
+                                         json={
+                                             'user_id': firefly_config['user_id'],
+                                             'account_id': firefly_account_id,
+                                             'data': base64.b64encode(content.encode('ascii')).decode('ascii'),
+                                         },
+                                         timeout=300)
+                if response.status_code != 200:
+                    logger.warn('Failed: status={};msg={}'.format(response.status_code, response.text))
 
 
 STATEMENT_IMPORTER = {

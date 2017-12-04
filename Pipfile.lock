@@ -239,9 +239,9 @@
         },
         "tangerine": {
             "hashes": [
-                "sha256:0219270b86bb6633f123cf50749669cbdcaa48fc9b7b34c446375f756188b9b3"
+                "sha256:6e52232429222e78c7d38073d3efae031595ebe8051d97d1a5e73cff29c8ee0e"
             ],
-            "version": "==0.2.9"
+            "version": "==0.3.9"
         },
         "urllib3": {
             "hashes": [
