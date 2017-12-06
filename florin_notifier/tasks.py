@@ -172,24 +172,30 @@ class RogersBankFireflyStatementImporter(FireflyStatementImporter):
         secret_provider = create_provider(secret_file, provider_factory=RogersBankSecretProvider)
         self._client = RogersBankClient(secret_provider)
 
-    def __call__(self, account_ids, firefly_config):
+    def __call__(self, account_ids, targets):
         assert len(account_ids) == 1
-        endpoint = firefly_config['endpoint']
-        account_id_mapping = firefly_config['account_id_mapping']
-
-        firefly_account_id = account_id_mapping[account_ids[0]]
-
         with self._client.login():
             content = self._client.download_statement('00', save=False)
 
-        response = requests.post(endpoint,
-                                 json={
-                                     'user_id': firefly_config['user_id'],
-                                     'account_id': firefly_account_id,
-                                     'data': base64.b64encode(content.encode('ascii')).decode('ascii'),
-                                 },
-                                 timeout=300)
-        response.raise_for_status()
+        for target in targets:
+            account_id_mapping = target['account_id_mapping']
+            endpoint = target['endpoint']
+            target_account_id = account_id_mapping[account_ids[0]]
+
+            request_json = {
+                'account_id': target_account_id,
+                'data': base64.b64encode(content.encode('ascii')).decode('ascii'),
+            }
+
+            if target.get('user_id') is not None:
+                request_json.update({
+                    'user_id': target['user_id'],
+                })
+
+            response = requests.post(endpoint, json=request_json, timeout=300)
+
+            if response.status_code != 200:
+                logger.warn('Failed: status={};msg={}'.format(response.status_code, response.text))
 
 
 class TangerineFireflyStatementImporter(FireflyStatementImporter):
@@ -203,9 +209,7 @@ class TangerineFireflyStatementImporter(FireflyStatementImporter):
         to_ = today + relativedelta(days=1)
         return from_, to_
 
-    def __call__(self, account_ids, firefly_config):
-        endpoint = firefly_config['endpoint']
-        account_id_mapping = firefly_config['account_id_mapping']
+    def __call__(self, account_ids, targets):
         from_, to_ = self._get_date_range()
 
         with self._client.login():
@@ -219,21 +223,27 @@ class TangerineFireflyStatementImporter(FireflyStatementImporter):
                 if not account_obj:
                     logger.warn('Account {} does not exist. Skip...'.format(account_id))
                     continue
-                firefly_account_id = account_id_mapping.get(account_id)
-                if not firefly_account_id:
-                    logger.warn('Account {} does not have a corresponding firefly id. Skip...'.format(account_id))
-                    continue
+                for target in targets:
+                    account_id_mapping = target['account_id_mapping']
+                    endpoint = target['endpoint']
 
-                content = self._client.download_ofx(account_obj, from_, to_, save=False)
-                response = requests.post(endpoint,
-                                         json={
-                                             'user_id': firefly_config['user_id'],
-                                             'account_id': firefly_account_id,
-                                             'data': base64.b64encode(content.encode('ascii')).decode('ascii'),
-                                         },
-                                         timeout=300)
-                if response.status_code != 200:
-                    logger.warn('Failed: status={};msg={}'.format(response.status_code, response.text))
+                    target_account_id = account_id_mapping.get(account_id)
+                    if not target_account_id:
+                        logger.warn('Account {} does not have a corresponding firefly id. Skip...'.format(account_id))
+                        continue
+
+                    content = self._client.download_ofx(account_obj, from_, to_, save=False)
+                    request_json = {
+                        'account_id': target_account_id,
+                        'data': base64.b64encode(content.encode('ascii')).decode('ascii'),
+                    }
+
+                    if target.get('user_id') is not None:
+                        request_json.update({'user_id': target.get('user_id')})
+
+                    response = requests.post(endpoint, json=request_json, timeout=300)
+                    if response.status_code != 200:
+                        logger.warn('Failed: status={};msg={}'.format(response.status_code, response.text))
 
 
 STATEMENT_IMPORTER = {
@@ -242,7 +252,7 @@ STATEMENT_IMPORTER = {
 }
 
 
-def upload_statement_to_firefly(bank, account_ids, secret_file, firefly_config, client=None):
+def upload_statement(bank, account_ids, secret_file, targets, client=None):
     assert bank in STATEMENT_IMPORTER
     importer = STATEMENT_IMPORTER[bank](secret_file)
-    return importer(account_ids, firefly_config)
+    return importer(account_ids, targets)

@@ -1,4 +1,4 @@
-from florin_notifier.tasks import upload_statement_to_firefly
+from florin_notifier.tasks import upload_statement
 
 # upload_statement_to_firefly(bank='rogersbank',
 #                             account_ids=['XXXX1670'],
@@ -11,20 +11,29 @@ from florin_notifier.tasks import upload_statement_to_firefly
 #                                 }
 #                             })
 
-upload_statement_to_firefly(bank='tangerine',
-                            account_ids=[
-                                '3132333435363738393031323334353621dd20f68fd39fc584681e37b04c9738',
-                                '31323334353637383930313233343536b07f7f8370bacc9575e1d614cd38d06a5d99f0cb4c4af76cd3ed4807a3d18dfb',
-                            ],
-                            secret_file='secrets/tangerine.json.gpg',
-                            firefly_config={
-                                "endpoint": "http://192.168.200.46:6060/import",
-                                "user_id": "1",
-                                "account_id_mapping": {
-                                    "3132333435363738393031323334353621dd20f68fd39fc584681e37b04c9738": "3",
-                                    "31323334353637383930313233343536b07f7f8370bacc9575e1d614cd38d06a5d99f0cb4c4af76cd3ed4807a3d18dfb": "1",
-                                }
-                            })
+upload_statement(bank='tangerine',
+                 account_ids=[
+                     '3132333435363738393031323334353621dd20f68fd39fc584681e37b04c9738',
+                     '31323334353637383930313233343536b07f7f8370bacc9575e1d614cd38d06a5d99f0cb4c4af76cd3ed4807a3d18dfb',
+                 ],
+                 secret_file='secrets/tangerine.json.gpg',
+                 targets=[
+                     {
+                         "endpoint": "http://192.168.200.45:6060/import",
+                         "user_id": "1",
+                         "account_id_mapping": {
+                             "3132333435363738393031323334353621dd20f68fd39fc584681e37b04c9738": "3",
+                             "31323334353637383930313233343536b07f7f8370bacc9575e1d614cd38d06a5d99f0cb4c4af76cd3ed4807a3d18dfb": "1",
+                         }
+                     },
+                     {
+                         "endpoint": "http://192.168.200.45:9000/api/import",
+                         "account_id_mapping": {
+                             "3132333435363738393031323334353621dd20f68fd39fc584681e37b04c9738": "1",
+                             "31323334353637383930313233343536b07f7f8370bacc9575e1d614cd38d06a5d99f0cb4c4af76cd3ed4807a3d18dfb": "4",
+                         }
+                     },
+                 ])
 
 # notify_rogersbank_transactions(account_ids=['XXXX1234'], secret_file='secrets/rogersbank.json.gpg', recipient='kevin.jing.qiu@gmail.com')
 
