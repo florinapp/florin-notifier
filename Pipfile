@@ -17,6 +17,7 @@ sendgrid = "*"
 pyyaml = "*"
 dateutils = "*"
 requests = "*"
+ofxparse = "*"
 
 
 [dev-packages]
