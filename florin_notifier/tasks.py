@@ -169,6 +169,21 @@ class RogersBankStatementImporter():
         self._client = RogersBankClient(secret_provider)
 
     def upload(self, statement_content, target_account_id, target):
+        pass
+
+    def __call__(self, account_ids, targets):
+        assert len(account_ids) == 1
+        with self._client.login():
+            content = self._client.download_statement('00', save=False)
+
+        for target in targets:
+            account_id_mapping = target['account_id_mapping']
+            target_account_id = account_id_mapping[account_ids[0]]
+            self.upload(content, target_account_id, target)
+
+
+class RogersBankFireflyStatementImporter(RogersBankStatementImporter):
+    def upload(self, statement_content, target_account_id, target):
         endpoint = target['endpoint']
         request_json = {
             'account_id': target_account_id,
@@ -185,20 +200,6 @@ class RogersBankStatementImporter():
         if response.status_code != 200:
             logger.warn('Failed: status={};msg={}'.format(response.status_code, response.text))
 
-    def __call__(self, account_ids, targets):
-        assert len(account_ids) == 1
-        with self._client.login():
-            content = self._client.download_statement('00', save=False)
-
-        for target in targets:
-            account_id_mapping = target['account_id_mapping']
-            target_account_id = account_id_mapping[account_ids[0]]
-            self.upload(content, target_account_id, target)
-
-
-class RogersBankFireflyStatementImporter(RogersBankStatementImporter):
-    pass
-
 
 class TangerineStatementImporter():
     def __init__(self, secret_file):
@@ -212,18 +213,7 @@ class TangerineStatementImporter():
         return from_, to_
 
     def upload(self, statement_content, target_account_id, target):
-        endpoint = target['endpoint']
-        request_json = {
-            'account_id': target_account_id,
-            'data': base64.b64encode(statement_content.encode('ascii')).decode('ascii'),
-        }
-
-        if target.get('user_id') is not None:
-            request_json.update({'user_id': target.get('user_id')})
-
-        response = requests.post(endpoint, json=request_json, timeout=300)
-        if response.status_code != 200:
-            logger.warn('Failed: status={};msg={}'.format(response.status_code, response.text))
+        pass
 
     def __call__(self, account_ids, targets):
         from_, to_ = self._get_date_range()
@@ -252,7 +242,19 @@ class TangerineStatementImporter():
 
 
 class TangerineFireflyStatementImporter(TangerineStatementImporter):
-    pass
+    def upload(self, statement_content, target_account_id, target):
+        endpoint = target['endpoint']
+        request_json = {
+            'account_id': target_account_id,
+            'data': base64.b64encode(statement_content.encode('ascii')).decode('ascii'),
+        }
+
+        if target.get('user_id') is not None:
+            request_json.update({'user_id': target.get('user_id')})
+
+        response = requests.post(endpoint, json=request_json, timeout=300)
+        if response.status_code != 200:
+            logger.warn('Failed: status={};msg={}'.format(response.status_code, response.text))
 
 
 STATEMENT_IMPORTER = {
