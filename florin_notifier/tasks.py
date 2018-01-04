@@ -169,7 +169,7 @@ class RogersBankStatementImporter():
         self._client = RogersBankClient(secret_provider)
 
     def upload(self, statement_content, target_account_id, target):
-        pass
+        raise NotImplemented()
 
     def __call__(self, account_ids, targets):
         assert len(account_ids) == 1
@@ -201,6 +201,10 @@ class RogersBankFireflyStatementImporter(RogersBankStatementImporter):
             logger.warn('Failed: status={};msg={}'.format(response.status_code, response.text))
 
 
+class RogersBankFlorinV2StatementImporter(RogersBankStatementImporter):
+    pass
+
+
 class TangerineStatementImporter():
     def __init__(self, secret_file):
         secret_provider = create_provider(secret_file, provider_factory=TangerineSecretProvider)
@@ -213,7 +217,7 @@ class TangerineStatementImporter():
         return from_, to_
 
     def upload(self, statement_content, target_account_id, target):
-        pass
+        raise NotImplemented()
 
     def __call__(self, account_ids, targets):
         from_, to_ = self._get_date_range()
@@ -233,16 +237,16 @@ class TangerineStatementImporter():
                     account_id_mapping = target['account_id_mapping']
 
                     target_account_id = account_id_mapping.get(account_id)
-                    if not target_account_id:
-                        logger.warn('Account {} does not have a corresponding firefly id. Skip...'.format(account_id))
-                        continue
-
                     content = self._client.download_ofx(account_obj, from_, to_, save=False)
                     self.upload(content, target_account_id, target)
 
 
 class TangerineFireflyStatementImporter(TangerineStatementImporter):
     def upload(self, statement_content, target_account_id, target):
+        if not target_account_id:
+            logger.warn('Account {} does not have a corresponding firefly id. Skip...'.format(account_id))
+            return
+
         endpoint = target['endpoint']
         request_json = {
             'account_id': target_account_id,
@@ -255,6 +259,10 @@ class TangerineFireflyStatementImporter(TangerineStatementImporter):
         response = requests.post(endpoint, json=request_json, timeout=300)
         if response.status_code != 200:
             logger.warn('Failed: status={};msg={}'.format(response.status_code, response.text))
+
+
+class TangerineFlorinV2StatementImporter(TangerineStatementImporter):
+    pass
 
 
 STATEMENT_IMPORTER = {
