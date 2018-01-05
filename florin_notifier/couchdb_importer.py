@@ -16,7 +16,6 @@ class Account():
         self._raw = ofx_account
         self.currency = self._raw.curdef
         self.account_id = self._raw.account_id
-        self.account_type = self._raw.accoun_type
         self.branch_id = self._raw.branch_id
         self.financial_institution = self._raw.institution.organization if self._raw.institution else None
         self.number = self._raw.number
