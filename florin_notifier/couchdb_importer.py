@@ -9,18 +9,24 @@ logger = logging.getLogger(__name__)
 
 
 class Account():
-    SIGNATURE_FIELDS = ['account_id', 'account_type', 'branch_id', 'curdef', 'institution', 'number',
+    SIGNATURE_FIELDS = ['account_id', 'account_type', 'branch_id', 'currency', 'financial_institution', 'number',
                         'routing_number', 'type']
 
     def __init__(self, ofx_account):
         self._raw = ofx_account
         self.currency = self._raw.curdef
+        self.account_id = self._raw.account_id
+        self.account_type = self._raw.accoun_type
+        self.branch_id = self._raw.branch_id
         self.financial_institution = self._raw.institution.organization if self._raw.institution else None
+        self.number = self._raw.number
+        self.routing_number = self._raw.routing_number
+        self.type = self._raw.type
         self.name = self._raw.number
 
     @property
     def _id(self):
-        signature = ''.join([str(getattr(self._raw, field)) or '' for field in self.SIGNATURE_FIELDS])
+        signature = ''.join([str(getattr(self, field)) or '' for field in self.SIGNATURE_FIELDS])
         print(signature)
         return hashlib.sha1(signature.encode('ascii')).hexdigest()
 
