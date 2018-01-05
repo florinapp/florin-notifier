@@ -32,6 +32,7 @@ class Account():
             '_id': self._id,
             'currency': self.currency,
             'financialInstitution': self.financial_institution,
+            'name': self.name,
             'history': [],
         }
 
