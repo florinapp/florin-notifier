@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class Account():
-    SIGNATURE_FIELDS = ['account_id', 'account_type', 'branch_id', 'currency', 'financial_institution', 'number',
+    SIGNATURE_FIELDS = ['account_id', 'branch_id', 'currency', 'financial_institution', 'number',
                         'routing_number', 'type']
 
     def __init__(self, ofx_account):
