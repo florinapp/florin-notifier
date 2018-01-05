@@ -81,7 +81,7 @@ class CouchDBImporter():
         server = couchdb.Server(target['db_server'])
         try:
             db = server[target['db_name']]
-        except as e:
+        except:
             db = server.create(target['db_name'])
         return db
 
