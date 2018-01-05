@@ -18,6 +18,7 @@ pyyaml = "*"
 dateutils = "*"
 requests = "*"
 ofxparse = "*"
+couchdb = "*"
 
 
 [dev-packages]
@@ -25,3 +26,4 @@ ofxparse = "*"
 pytest = "*"
 freezegun = "*"
 mock = "*"
+pdbpp = "*"
