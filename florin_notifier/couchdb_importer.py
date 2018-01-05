@@ -50,12 +50,13 @@ class Transaction():
 
     @property
     def _id(self):
-        return self.checksum
+        signature = ''.join([str(getattr(self._raw, field)) or '' for field in self.SIGNATURE_FIELDS])
+        return hashlib.sha1(signature.encode('ascii')).hexdigest()
 
     @property
     def checksum(self):
         signature = ''.join([str(getattr(self._raw, field)) or '' for field in self.SIGNATURE_FIELDS])
-        return hashlib.sha1(signature.encode('ascii')).hexdigest()
+        return 'sha256:' + hashlib.sha256(signature.encode('ascii')).hexdigest()
 
     @property
     def json(self):
