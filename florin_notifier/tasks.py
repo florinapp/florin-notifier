@@ -178,7 +178,7 @@ class RogersBankStatementImporter():
             content = self._client.download_statement('00', save=False)
 
         for target in targets:
-            account_id_mapping = target.get('account_id_mapping', {})
+            account_id_mapping = target.get('account_id_mapping') or {}
             target_account_id = account_id_mapping.get(account_ids[0])
             self.upload(content, target_account_id, target)
 
@@ -235,7 +235,7 @@ class TangerineStatementImporter():
                     logger.warn('Account {} does not exist. Skip...'.format(account_id))
                     continue
                 for target in targets:
-                    account_id_mapping = target.get('account_id_mapping', {})
+                    account_id_mapping = target.get('account_id_mapping') or  {}
 
                     target_account_id = account_id_mapping.get(account_id)
                     content = self._client.download_ofx(account_obj, from_, to_, save=False)
