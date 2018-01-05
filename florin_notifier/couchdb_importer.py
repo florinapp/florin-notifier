@@ -21,6 +21,7 @@ class Account():
     @property
     def _id(self):
         signature = ''.join([str(getattr(self._raw, field)) or '' for field in self.SIGNATURE_FIELDS])
+        print(signature)
         return hashlib.sha1(signature.encode('ascii')).hexdigest()
 
     @property
@@ -80,7 +81,7 @@ class CouchDBImporter():
         server = couchdb.Server(target['db_server'])
         try:
             db = server[target['db_name']]
-        except:
+        except as e:
             db = server.create(target['db_name'])
         return db
 
@@ -88,7 +89,8 @@ class CouchDBImporter():
         account = Account(ofx_account)
         try:
             db_account = db[account._id]
-        except:
+        except Exception as e:
+            print(e)
             account_id = db.create(account.json)
             db_account = db[account_id]
         return db_account
