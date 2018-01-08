@@ -53,7 +53,7 @@ class Transaction():
         self.date = ofx_txn.date.isoformat()
         self.memo = ofx_txn.memo
         self.payee = ofx_txn.payee
-        self.type = self.TYPES.get(ofx_txn.type, ofx_txn.type.upper())
+        self.type = "CREDIT" if float(self.amount) > 0 else "DEBIT"
 
     @property
     def _id(self):
