@@ -50,7 +50,7 @@ class Transaction():
     def __init__(self, ofx_txn):
         self._raw = ofx_txn
         self.amount = str(ofx_txn.amount)
-        self.date = ofx_txn.date.isoformat()
+        self.date = ofx_txn.date.strftime("%Y-%m-%d")
         self.memo = ofx_txn.memo
         self.payee = ofx_txn.payee
         self.type = "CREDIT" if float(self.amount) > 0 else "DEBIT"
